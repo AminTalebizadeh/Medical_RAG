@@ -1,0 +1,13 @@
+# Medical RAG
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+.eggs/
+data/chroma_db/
+*.log
+.env
+.venv/
+venv/

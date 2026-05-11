@@ -1,0 +1,51 @@
+# Medical RAG — Evidence retrieval configuration
+# Supports guidelines, drug monographs, and medical textbooks (CDC/WHO, DrugBank-style)
+
+project:
+  name: "Medical RAG"
+  version: "1.0.0"
+
+# Embedding model: use a model suitable for medical/scientific text
+# Options: sentence-transformers (e.g. all-MiniLM-L6-v2, paraphrase-multilingual-MiniLM-L12-v2)
+# For better medical recall: BAAI/bge-small-en-v1.5 or similar
+embeddings:
+  provider: "sentence_transformers"  # or "openai" if OPENAI_API_KEY set
+  model_name: "sentence-transformers/all-MiniLM-L6-v2"
+  # model_name: "BAAI/bge-small-en-v1.5"  # uncomment for stronger retrieval
+
+# Vector store
+vector_store:
+  type: "chroma"  # chroma | faiss
+  persist_directory: "data/chroma_db"
+  collection_name: "medical_evidence"
+
+# Chunking for documents
+chunking:
+  chunk_size: 512
+  chunk_overlap: 64
+  separators: ["\n\n", "\n", ". ", " "]  # try paragraph then sentence
+
+# Retrieval
+retrieval:
+  top_k_dense: 20       # candidates from dense search
+  top_k_bm25: 20        # candidates from BM25 (sparse)
+  fusion_method: "rrf"  # rrf (reciprocal rank fusion) | linear
+  rrf_k: 60
+  top_k_after_fusion: 10
+  rerank: true
+  reranker_model: "cross-encoder/ms-marco-MiniLM-L-6-v2"
+  top_k_final: 5        # passages sent to LLM
+
+# LLM for generation (set env OPENAI_API_KEY for OpenAI; otherwise uses local/ollama if configured)
+llm:
+  provider: "openai"   # openai | ollama | huggingface
+  model_name: "gpt-4o-mini"
+  temperature: 0.1
+  max_tokens: 1024
+
+# Data paths (relative to project root or absolute)
+data:
+  guidelines_dir: "data/guidelines"
+  drug_monographs_dir: "data/drug_monographs"
+  custom_docs_dir: "data/custom_docs"   # optional PDFs/txt
+  sample_data_dir: "data/sample"

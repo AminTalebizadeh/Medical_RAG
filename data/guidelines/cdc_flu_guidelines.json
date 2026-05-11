@@ -1,0 +1,14 @@
+[
+  {
+    "id": "cdc-flu-2024",
+    "title": "CDC Seasonal Influenza Vaccination Recommendations",
+    "source": "CDC",
+    "content": "Annual influenza vaccination is recommended for all persons aged 6 months and older who do not have contraindications. Vaccination is especially important for persons at higher risk of complications: adults 65 years and older, children under 2, pregnant people, and those with chronic medical conditions (e.g., asthma, diabetes, heart disease). Optimal timing is by the end of October; vaccination should continue as long as influenza viruses are circulating. Inactivated and recombinant vaccines are preferred over live attenuated vaccine in immunocompromised persons. History of severe allergic reaction (e.g., anaphylaxis) to any vaccine component is a contraindication."
+  },
+  {
+    "id": "cdc-flu-antivirals",
+    "title": "CDC Influenza Antiviral Treatment",
+    "source": "CDC",
+    "content": "Antiviral treatment is recommended as early as possible for outpatients with suspected or confirmed influenza who are at higher risk of complications (e.g., aged 65 and older, pregnant, immunocompromised, or with chronic conditions). Oseltamivir, baloxavir, and zanamivir are recommended. Treatment should ideally start within 48 hours of symptom onset but can still be beneficial when started later in severe or high-risk cases. Duration is typically 5 days for oseltamivir and zanamivir; baloxavir is single-dose. Chemoprophylaxis may be considered for high-risk persons with exposure to influenza."
+  }
+]

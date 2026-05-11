@@ -1,0 +1,32 @@
+[
+  {
+    "name": "Amoxicillin",
+    "description": "Amoxicillin is a penicillin-type beta-lactam antibiotic used for a wide range of bacterial infections.",
+    "indications": "Respiratory tract infections, otitis media, sinusitis, urinary tract infections, skin and soft tissue infections, H. pylori eradication (with other drugs).",
+    "mechanism": "Inhibits bacterial cell wall synthesis by binding to penicillin-binding proteins.",
+    "contraindications": "History of serious hypersensitivity to amoxicillin, other penicillins, or beta-lactams (e.g., anaphylaxis, Stevens-Johnson syndrome).",
+    "interactions": "Probenecid delays renal excretion. Allopurinol may increase risk of rash. May reduce efficacy of oral contraceptives.",
+    "adverse_effects": "Diarrhea, nausea, rash, hypersensitivity reactions including anaphylaxis. Rare: hepatitis, Clostridioides difficile-associated diarrhea.",
+    "dosing": "Adults: 250–500 mg PO every 8 hours or 500–875 mg every 12 hours depending on indication. Children: 20–90 mg/kg/day in divided doses. Duration typically 7–14 days."
+  },
+  {
+    "name": "Metformin",
+    "description": "Metformin is a biguanide antidiabetic agent, first-line for type 2 diabetes mellitus.",
+    "indications": "Type 2 diabetes mellitus as monotherapy or in combination; off-label use in prediabetes and PCOS.",
+    "mechanism": "Decreases hepatic glucose output and improves peripheral glucose uptake; mechanism not fully understood.",
+    "contraindications": "Severe renal impairment (eGFR below 30), metabolic acidosis, severe hepatic impairment, conditions predisposing to lactic acidosis (e.g., sepsis, radiocontrast procedures).",
+    "interactions": "Contrast media may increase risk of lactic acidosis; withhold before and after procedures. Cationic drugs (e.g., cimetidine) may reduce renal clearance.",
+    "adverse_effects": "GI effects (diarrhea, nausea, abdominal discomfort) common at start; usually transient. Rare: lactic acidosis, vitamin B12 deficiency with long-term use.",
+    "dosing": "Start 500 mg once or twice daily with meals; titrate to 1000–2550 mg/day in divided doses. Extended-release available. Take with food to reduce GI upset."
+  },
+  {
+    "name": "Ibuprofen",
+    "description": "Ibuprofen is a nonsteroidal anti-inflammatory drug (NSAID) with analgesic, anti-inflammatory, and antipyretic effects.",
+    "indications": "Mild to moderate pain, fever, inflammatory conditions (e.g., rheumatoid arthritis, osteoarthritis).",
+    "mechanism": "Reversible inhibition of cyclooxygenase (COX)-1 and COX-2, reducing prostaglandin synthesis.",
+    "contraindications": "History of asthma, urticaria, or other allergic reaction after aspirin or other NSAIDs; perioperative coronary artery bypass graft (CABG) surgery; third trimester of pregnancy.",
+    "interactions": "May increase bleeding risk with anticoagulants, antiplatelet drugs. May reduce effect of ACE inhibitors, diuretics. Concomitant use with other NSAIDs or corticosteroids increases GI and cardiovascular risk.",
+    "adverse_effects": "GI (dyspepsia, ulceration, bleeding), cardiovascular (thrombosis, MI, stroke), renal impairment, edema, hypersensitivity. Rare: aseptic meningitis, hepatotoxicity.",
+    "dosing": "Adults: 200–400 mg every 4–6 hours as needed; max 1200 mg/day OTC, up to 3200 mg/day prescription. Take with food to reduce GI effects."
+  }
+]
