@@ -1,109 +1,154 @@
 # Medical RAG — Evidence Retrieval
 
-A **Retrieval-Augmented Generation (RAG)** system for medical evidence: QA over **clinical guidelines**, **drug monographs**, and **medical textbooks** with **citations**. Matches current "evidence retrieval" use cases in medicine (e.g. DrugBank, CDC/WHO-style content).
+A Retrieval-Augmented Generation (RAG) system for medical evidence lookup and question answering over **clinical guidelines**, **drug monographs**, and **medical reference documents** with **source citations**.
 
-## Features
+This project is designed as a practical evidence-retrieval demo for medical and clinical information workflows. It focuses on traceable answers, hybrid search, and a safer generation layer that prefers evidence over free-form responses.
 
-- **Multi-source corpus**: Guidelines (CDC, WHO), drug monographs (DrugBank-style), and custom documents
-- **Hybrid retrieval**: Dense (sentence-transformers) + sparse (BM25) with **Reciprocal Rank Fusion (RRF)**
-- **Reranking**: Cross-encoder reranker for better precision before generation
-- **Citations**: Every answer references evidence with source labels (e.g. [Source 1], [Source 2])
-- **Safety**: System prompt enforces evidence-only answers and a clear **disclaimer** (not for diagnosis/treatment)
+## Key features
 
-## Project structure
+- **Multiple knowledge sources**: clinical guidelines, drug monographs, and custom documents
+- **Hybrid retrieval**: combines dense embeddings with BM25 lexical search
+- **Reciprocal Rank Fusion (RRF)**: merges retrieval results into a single ranked list
+- **Reranking**: uses a cross-encoder reranker to improve final passage quality
+- **Citations**: returns source-aware answers with references such as `[Source 1]`, `[Source 2]`
+- **Safety-first prompting**: encourages evidence-based responses and includes a clear medical disclaimer
 
-```
+## Project layout
+
+```text
 Medical_RAG/
 ├── config/
-│   └── settings.yaml       # Embeddings, chunking, retrieval, LLM
+│   └── settings.yaml       # Embeddings, chunking, retrieval, and LLM settings
 ├── data/
-│   ├── guidelines/         # CDC/WHO-style JSON or TXT
-│   ├── drug_monographs/    # DrugBank-style JSON
-│   ├── custom_docs/        # Optional PDF/TXT
-│   └── chroma_db/          # Vector store (created by ingest)
+│   ├── guidelines/         # CDC/WHO-style JSON or TXT files
+│   ├── drug_monographs/    # DrugBank-style JSON files
+│   ├── custom_docs/        # Optional PDF/TXT/MD files
+│   └── chroma_db/          # Vector database created during ingestion
 ├── src/
 │   ├── config.py
-│   ├── pipeline.py         # Build full RAG pipeline
-│   ├── ingest/             # Loaders, chunking, Document type
-│   ├── retrieval/          # Embeddings, Chroma, hybrid, reranker
-│   └── generation/         # Prompts, RAG chain, citations
+│   ├── pipeline.py         # Builds the full RAG pipeline
+│   ├── ingest/             # Loaders, chunking, and document handling
+│   ├── retrieval/          # Embeddings, Chroma, hybrid search, reranking
+│   └── generation/         # Prompts, RAG chain, and citations
 ├── scripts/
-│   ├── run_ingest.py       # Ingest docs into vector store
-│   └── run_qa.py           # CLI QA
-├── app.py                  # Streamlit UI
+│   ├── run_ingest.py       # Ingests documents into the vector store
+│   └── run_qa.py           # CLI question-answering entry point
+├── app.py                  # Streamlit interface
 ├── requirements.txt
 └── README.md
 ```
 
-## Setup
+## Getting started
 
-1. **Create environment and install dependencies**
+1. **Create a virtual environment and install dependencies**
 
    ```bash
    cd Medical_RAG
    pip install -r requirements.txt
    ```
 
-2. **Optional: OpenAI for generation**
+2. **Configure an LLM provider**
 
-   Set `OPENAI_API_KEY` for GPT-based answers. Without it, the pipeline still runs retrieval and shows a placeholder for the LLM step.
+   For GPT-based generation, set `OPENAI_API_KEY` in your environment. If no API key is provided, the retrieval pipeline can still run, but generation will fall back to the project's configured placeholder or local option.
 
    ```bash
-   set OPENAI_API_KEY=sk-...
+   export OPENAI_API_KEY="sk-..."
    ```
 
-3. **Ingest sample data (included)**
+   On Windows PowerShell:
 
-   Sample guidelines (CDC flu, WHO hypertension) and drug monographs (amoxicillin, metformin, ibuprofen) are under `data/guidelines` and `data/drug_monographs`.
+   ```powershell
+   $env:OPENAI_API_KEY="sk-..."
+   ```
+
+3. **Ingest the sample corpus**
+
+   The repository includes sample guidelines and drug monographs under `data/guidelines` and `data/drug_monographs`.
 
    ```bash
    python scripts/run_ingest.py
    ```
 
-4. **Ask questions**
+4. **Ask a question**
 
-   - **CLI**
-     ```bash
-     python scripts/run_qa.py "When is influenza vaccination recommended?"
-     python scripts/run_qa.py   # interactive loop
-     ```
-   - **Streamlit**
-     ```bash
-     streamlit run app.py
-     ```
+   CLI examples:
+
+   ```bash
+   python scripts/run_qa.py "When is influenza vaccination recommended?"
+   python scripts/run_qa.py
+   ```
+
+   Streamlit UI:
+
+   ```bash
+   streamlit run app.py
+   ```
 
 ## Configuration
 
-Edit `config/settings.yaml` to:
+Most project behavior is controlled from `config/settings.yaml`. You can adjust:
 
-- Change **embedding model** (e.g. `BAAI/bge-small-en-v1.5` for stronger retrieval)
-- Adjust **chunk size/overlap** and **top_k** for retrieval and reranking
-- Switch **LLM** provider (`openai` or `ollama`) and model name
-- Point **data paths** to your own guidelines/drug/custom docs
+- **Embedding model** for retrieval quality
+- **Chunk size and overlap** for document splitting
+- **Top-k values** for retrieval and reranking
+- **LLM provider** and model name (`openai` or `ollama`)
+- **Data paths** for your own guideline, drug, or custom document collections
 
 ## Adding your own data
 
-- **Guidelines**: Add JSON under `data/guidelines/` with keys e.g. `title`, `source`, `content` (or `text`), and optional `id`.
-- **Drug monographs**: Add JSON under `data/drug_monographs/` with keys such as `name`, `description`, `indications`, `mechanism`, `contraindications`, `interactions`, `adverse_effects`, `dosing`.
-- **Custom**: Put `.txt` or `.md` in `data/custom_docs/`.
+### Guidelines
 
-Then run **ingest** again. To avoid duplicates, clear or replace `data/chroma_db` and re-run `run_ingest.py` if you change the corpus.
+Add JSON files to `data/guidelines/` with fields such as:
 
-## Design choices
+- `title`
+- `source`
+- `content` or `text`
+- optional `id`
 
-- **Hybrid search**: Combines semantic (dense) and lexical (BM25) retrieval for better recall on medical terms and guidelines.
-- **RRF**: Keeps a single ranking without tuning fusion weights.
-- **Reranker**: Improves precision of the final passages sent to the LLM.
-- **Evidence-only + disclaimer**: Aligns with regulatory and clinical expectations for decision-support tools.
+### Drug monographs
 
-## Tests
+Add JSON files to `data/drug_monographs/` with fields such as:
 
-From project root:
+- `name`
+- `description`
+- `indications`
+- `mechanism`
+- `contraindications`
+- `interactions`
+- `adverse_effects`
+- `dosing`
+
+### Custom documents
+
+Place `.txt`, `.md`, or other supported files in `data/custom_docs/`.
+
+After adding or changing documents, rerun ingestion:
+
+```bash
+python scripts/run_ingest.py
+```
+
+If the corpus changes significantly, clear or replace `data/chroma_db` before re-ingesting to avoid duplicate entries.
+
+## Why these design choices
+
+- **Hybrid search** improves recall by combining semantic matching with lexical matching, which is especially useful for medical terminology and guideline language.
+- **RRF** keeps fusion simple and stable without requiring manual weighting.
+- **Reranking** improves precision by promoting the most relevant passages before generation.
+- **Evidence-first prompting** helps keep answers grounded in retrieved sources, which is important for decision-support style use cases.
+
+## Testing
+
+Run the test suite from the project root:
 
 ```bash
 pytest tests/ -v
 ```
 
+## Notes
+
+This project is intended for learning, portfolio work, and prototype evaluation. It is **not** a clinical decision system and should not be used for diagnosis, treatment, or regulatory use without proper validation, review, and compliance checks.
+
 ## License
 
-Use for learning and portfolio. Not for clinical or regulatory use without appropriate validation and compliance.
+Use for learning and portfolio purposes only.

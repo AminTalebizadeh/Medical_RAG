@@ -26,7 +26,6 @@ def chunk_text(
 
     def _split(s: str, sep_index: int) -> List[str]:
         if sep_index >= len(separators):
-            # Character-level fallback
             return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size - chunk_overlap)]
         sep = separators[sep_index]
         parts = s.split(sep)
