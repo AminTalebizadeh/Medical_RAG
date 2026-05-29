@@ -1,7 +1,7 @@
 """Embedding models for medical document retrieval."""
 from __future__ import annotations
 
-from typing import List, Union
+from typing import List
 
 from src.ingest.documents import Document
 

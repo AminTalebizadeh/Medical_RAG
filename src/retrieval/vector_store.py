@@ -171,7 +171,7 @@ def get_retriever(
                     doc_type=meta.get("doc_type", "general"),
                 )
             )
-    id_to_doc = {f"doc_{i}": all_docs[i] for i in range(len(all_docs))}
+            
     contents_list = [d.content for d in all_docs]
 
     return ChromaVectorStore(
