@@ -39,8 +39,12 @@ def format_context_and_sources(
             break
         label = f"[Source {i}]"
         excerpt = doc.content
-        if total_chars + len(excerpt) > max_chars:
-            excerpt = excerpt[: max_chars - total_chars - 50] + "..."
+        remaining = max_chars - total_chars
+        if len(excerpt) > remaining:
+            # FIX: guard against a negative slice index when little budget remains
+            if remaining <= 50:
+                break
+            excerpt = excerpt[: remaining - 50] + "..."
         context_parts.append(f"{label} ({doc.source}, {doc.source_id})\n{excerpt}")
         sources.append({
             "label": label,

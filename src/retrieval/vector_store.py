@@ -13,6 +13,7 @@ def build_vector_store(
     persist_directory: str | Path,
     collection_name: str = "medical_evidence",
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    embedding_provider: str | None = "onnx",
     batch_size: int = 32,
 ) -> "ChromaVectorStore":
     """
@@ -41,7 +42,7 @@ def build_vector_store(
         metadata={"description": "Medical evidence (guidelines, drug monographs)"},
     )
 
-    model = get_embedding_model(embedding_model_name)
+    model = get_embedding_model(embedding_model_name, provider=embedding_provider)
     embeddings = embed_documents(model, documents, batch_size=batch_size, show_progress=True)
 
     ids = [f"doc_{i}" for i in range(len(documents))]
@@ -96,6 +97,11 @@ class ChromaVectorStore:
         self._documents = documents
         self._id_to_doc = {f"doc_{i}": documents[i] for i in range(len(documents))}
 
+    @property
+    def documents(self) -> List[Document]:
+        """Public read-only access to the full Document list (used by HybridRetriever/BM25)."""
+        return self._documents
+
     def query(
         self,
         query_text: str,
@@ -135,6 +141,7 @@ def get_retriever(
     persist_directory: str | Path,
     collection_name: str = "medical_evidence",
     embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2",
+    embedding_provider: str | None = "onnx",
 ) -> ChromaVectorStore:
     """Load existing Chroma store and return it as a retriever (no documents list needed for query)."""
     try:
@@ -149,7 +156,7 @@ def get_retriever(
 
     client = chromadb.PersistentClient(path=str(path), settings=ChromaSettings(anonymized_telemetry=False))
     collection = client.get_collection(collection_name)
-    model = get_embedding_model(embedding_model_name)
+    model = get_embedding_model(embedding_model_name, provider=embedding_provider)
 
     # Rebuild documents from persisted list if available (for hybrid BM25); else from Chroma metadatas
     all_docs = []

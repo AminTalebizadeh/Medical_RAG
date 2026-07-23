@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from src.ingest.documents import Document
 from .prompts import MEDICAL_QA_SYSTEM_PROMPT, USER_QA_TEMPLATE, format_context_and_sources
@@ -18,7 +18,13 @@ class RAGResponse:
     query: str = ""
 
 
-def _get_llm(provider: str, model_name: str, temperature: float = 0.1, max_tokens: int = 1024):
+def _get_llm(
+    provider: str,
+    model_name: str,
+    temperature: float = 0.1,
+    max_tokens: int = 1024,
+    base_url: str = "http://localhost:11434",
+):
     """Return an LLM instance based on config (OpenAI or Ollama)."""
     if provider == "openai":
         try:
@@ -38,12 +44,39 @@ def _get_llm(provider: str, model_name: str, temperature: float = 0.1, max_token
                     "Install: pip install langchain-openai openai"
                 ) from e
     if provider == "ollama":
+        # Prefer ChatOllama (message API); fall back to community Ollama LLM.
+        try:
+            from langchain_ollama import ChatOllama
+            return ChatOllama(
+                model=model_name,
+                temperature=temperature,
+                num_predict=max_tokens,
+                base_url=base_url,
+            )
+        except ImportError:
+            pass
+        try:
+            from langchain_community.chat_models import ChatOllama
+            return ChatOllama(
+                model=model_name,
+                temperature=temperature,
+                num_predict=max_tokens,
+                base_url=base_url,
+            )
+        except ImportError:
+            pass
         try:
             from langchain_community.llms import Ollama
-            return Ollama(model=model_name, temperature=temperature, num_predict=max_tokens)
+            return Ollama(
+                model=model_name,
+                temperature=temperature,
+                num_predict=max_tokens,
+                base_url=base_url,
+            )
         except ImportError as e:
             raise ImportError(
-                "Ollama provider requires langchain-community. pip install langchain-community"
+                "Ollama provider requires langchain-ollama or langchain-community. "
+                "Install: pip install langchain-ollama langchain-community"
             ) from e
     raise ValueError(f"Unsupported LLM provider: {provider}")
 
@@ -67,48 +100,63 @@ class MedicalRAGChain:
         self.reranker = reranker
         self.llm = llm
         self.config = config or {}
-        self._retrieval_top_k = self.config.get("retrieval", {}).get("top_k_after_fusion", 10)
-        self._rerank_top_k = self.config.get("retrieval", {}).get("top_k_final", 5)
-        self._use_rerank = self.config.get("retrieval", {}).get("rerank", True) and reranker is not None
+        ret_cfg = self.config.get("retrieval", {})
+        self._top_k_dense = ret_cfg.get("top_k_dense", 20)
+        self._top_k_bm25 = ret_cfg.get("top_k_bm25", 20)
+        self._retrieval_top_k = ret_cfg.get("top_k_after_fusion", 10)
+        self._rerank_top_k = ret_cfg.get("top_k_final", 5)
+        self._use_rerank = ret_cfg.get("rerank", True) and reranker is not None
 
     def retrieve(self, query: str) -> List[tuple[Document, float]]:
         """Run retrieval (hybrid + optional rerank)."""
         if hasattr(self.retriever, "retrieve"):
             pairs = self.retriever.retrieve(
                 query,
+                top_k_dense=self._top_k_dense,
+                top_k_bm25=self._top_k_bm25,
                 top_k_after_fusion=self._retrieval_top_k,
             )
         else:
             pairs = self.retriever.query(query, top_k=self._retrieval_top_k)
+
         if self._use_rerank and self.reranker and pairs:
-            pairs = self.reranker.rerank(query, pairs, top_k=self._rerank_top_k)
+            
+            try:
+                pairs = self.reranker.rerank(query, pairs, top_k=self._rerank_top_k)
+            except Exception as e:
+                print(f"Reranker unavailable ({e}); falling back to fused ranking.")
+                pairs = pairs[: self._rerank_top_k]
         elif pairs and self._rerank_top_k < len(pairs):
             pairs = pairs[: self._rerank_top_k]
         return pairs
 
-    def generate(self, query: str, context: str, sources: List[dict]) -> str:
-        """Generate answer from context using LLM."""
+    def generate(self, query: str, context: str) -> str:
+        """Generate answer from context using the configured LLM."""
         if not self.llm:
             return (
-                "[No LLM configured. Set OPENAI_API_KEY and install langchain-openai, "
-                "or configure Ollama.]"
+                "[No LLM configured. Set llm.provider to ollama (local) or openai "
+                "(with OPENAI_API_KEY), and install the matching packages.]"
             )
         user_prompt = USER_QA_TEMPLATE.format(context=context, question=query)
+        combined = MEDICAL_QA_SYSTEM_PROMPT + "\n\n" + user_prompt
         try:
             if hasattr(self.llm, "invoke"):
-                # Prefer message format for chat models (OpenAI, etc.)
+                # Chat models accept messages; completion models expect a plain string.
                 try:
                     from langchain_core.messages import SystemMessage, HumanMessage
-                    msgs = [SystemMessage(content=MEDICAL_QA_SYSTEM_PROMPT), HumanMessage(content=user_prompt)]
+                    msgs = [
+                        SystemMessage(content=MEDICAL_QA_SYSTEM_PROMPT),
+                        HumanMessage(content=user_prompt),
+                    ]
                     out = self.llm.invoke(msgs)
-                except ImportError:
-                    out = self.llm.invoke(MEDICAL_QA_SYSTEM_PROMPT + "\n\n" + user_prompt)
+                except Exception:
+                    out = self.llm.invoke(combined)
                 if hasattr(out, "content"):
                     return out.content
                 return str(out)
-            return str(self.llm(user_prompt))
+            return str(self.llm(combined))
         except Exception as e:
-            return f"[LLM error: {e}. Check API key and model name.]"
+            return f"[LLM error: {e}. Check Ollama is running and model name is correct.]"
 
     def run(self, query: str) -> RAGResponse:
         """Run full pipeline: retrieve -> format context -> generate -> return with sources."""
@@ -121,7 +169,7 @@ class MedicalRAGChain:
                 context_used="",
                 query=query,
             )
-        answer = self.generate(query, context, sources)
+        answer = self.generate(query, context)
         return RAGResponse(
             answer=answer,
             sources=sources,

@@ -72,6 +72,7 @@ def main():
         persist_directory=persist_dir,
         collection_name=vs_cfg.get("collection_name", "medical_evidence"),
         embedding_model_name=emb_cfg.get("model_name", "sentence-transformers/all-MiniLM-L6-v2"),
+        embedding_provider=emb_cfg.get("provider", "onnx"),
     )
     print(f"Vector store saved to {persist_dir}")
     return 0

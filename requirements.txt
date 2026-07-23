@@ -14,8 +14,11 @@ openai>=1.0.0
 langchain-openai>=0.0.5
 langchain-core>=0.2.0
 
-# Optional: local LLM
-# langchain-community>=0.0.20
+# Local LLM via Ollama
+langchain-community>=0.0.20
+langchain-ollama>=0.1.0
 
 # App
 streamlit>=1.28.0
+
+python-dotenv>=1.2.2

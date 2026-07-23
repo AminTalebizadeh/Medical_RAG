@@ -29,7 +29,7 @@ def load_guidelines(dir_path: str | Path) -> List[Document]:
                         docs.append(_guideline_item_to_doc(item, f.stem))
                 else:
                     docs.append(_guideline_item_to_doc(data, f.stem))
-            except (json.JSONDecodeError, KeyError) as e:
+            except (json.JSONDecodeError, KeyError):
                 continue  # skip malformed
         elif f.suffix.lower() == ".txt":
             try:

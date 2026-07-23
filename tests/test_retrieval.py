@@ -45,9 +45,27 @@ def test_hybrid_bm25_search():
     assert all(isinstance(r[0], Document) for r in results)
 
 
+def _torch_cuda_unsafe() -> bool:
+    """True when CUDA torch is installed but the driver is broken (can hard-crash)."""
+    try:
+        import torch
+        # cudaGetDeviceCount returning an error on Windows often precedes ACCESS_VIOLATION.
+        if not hasattr(torch, "cuda"):
+            return False
+        try:
+            torch.cuda.device_count()
+            return not torch.cuda.is_available() and "cuda" in torch.__version__.lower()
+        except Exception:
+            return True
+    except Exception:
+        return True
+
+
 @pytest.mark.slow
 def test_reranker_top_k():
     """Loads cross-encoder model; run with pytest -m 'not slow' to skip."""
+    if _torch_cuda_unsafe():
+        pytest.skip("Skipping reranker: broken/unsupported CUDA torch would hard-crash.")
     docs = [
         Document("content A", source="S1", source_id="1"),
         Document("content B", source="S2", source_id="2"),

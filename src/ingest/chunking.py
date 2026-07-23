@@ -12,26 +12,28 @@ def chunk_text(
     chunk_overlap: int = 64,
     separators: List[str] | None = None,
 ) -> List[str]:
-    """
-    Split text into overlapping chunks, preferring paragraph/sentence boundaries.
-    Uses recursive separator splitting for medical text.
-    """
+    
     if separators is None:
         separators = ["\n\n", "\n", ". ", " "]
     if not text or not text.strip():
         return []
+    if chunk_overlap < 0 or chunk_overlap >= chunk_size:
+        raise ValueError(
+            f"chunk_overlap ({chunk_overlap}) must be >= 0 and smaller than chunk_size ({chunk_size})"
+        )
 
     text = text.strip()
-    chunks: List[str] = []
 
     def _split(s: str, sep_index: int) -> List[str]:
         if sep_index >= len(separators):
-            return [s[i : i + chunk_size] for i in range(0, len(s), chunk_size - chunk_overlap)]
+            # Character-level fallback when no separator works
+            step = chunk_size - chunk_overlap
+            return [s[i : i + chunk_size] for i in range(0, len(s), step)]
         sep = separators[sep_index]
         parts = s.split(sep)
         result: List[str] = []
         current = ""
-        for part in enumerate(parts):
+        for part in parts:  # FIX 1 (was: for part in enumerate(parts))
             candidate = (current + (sep if current else "") + part).strip()
             if len(candidate) <= chunk_size:
                 current = candidate
@@ -47,20 +49,19 @@ def chunk_text(
             result.append(current)
         return result
 
-    raw_chunks = _split(text, 0)
+    raw_chunks = [c.strip() for c in _split(text, 0) if c.strip()]
 
-    # Apply overlap by sliding window where beneficial
-    for c in raw_chunks:
-        if len(c) <= chunk_size:
-            chunks.append(c)
-        else:
-            start = 0
-            while start < len(c):
-                end = start + chunk_size
-                chunks.append(c[start:end])
-                start = end - chunk_overlap
-                if start >= len(c):
-                    break
+   
+    if chunk_overlap > 0 and len(raw_chunks) > 1:
+        chunks: List[str] = [raw_chunks[0]]
+        for prev, cur in zip(raw_chunks, raw_chunks[1:]):
+            tail = prev[-chunk_overlap:]
+
+            if len(prev) > chunk_overlap and " " in tail:
+                tail = tail.split(" ", 1)[1]
+            chunks.append(f"{tail} {cur}".strip() if tail else cur)
+    else:
+        chunks = raw_chunks
 
     return [c.strip() for c in chunks if c.strip()]
 
@@ -71,10 +72,7 @@ def medical_chunk_documents(
     chunk_overlap: int = 64,
     separators: List[str] | None = None,
 ) -> List[Document]:
-    """
-    Chunk a list of documents into smaller pieces while preserving metadata
-    for citation (source, source_id, doc_type).
-    """
+    
     if separators is None:
         separators = ["\n\n", "\n", ". ", " "]
     out: List[Document] = []
